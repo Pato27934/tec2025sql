@@ -11,6 +11,11 @@
             background: #f4f4f4;
         }
 
+        body.dark-mode {
+            background: #181a1b;
+            color: #fff;
+        }
+
         .chat {
             max-width: 900px;
             min-height: 80vh;
@@ -19,6 +24,12 @@
             border-radius: 16px;
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
             padding: 30px 30px 30px 30px;
+        }
+
+        .chat.dark-mode {
+            background: #23272f;
+            color: #fff;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
         }
 
         .bubble {
@@ -36,10 +47,18 @@
             /* animation: fadeInUp 0.5s forwards; */
         }
 
+        .bubble.dark-mode {
+            color: #fff;
+        }
+
         .bubble.user {
             background: #d1ffe6;
             border-radius: 16px 16px 16px 4px;
             align-self: flex-end;
+        }
+
+        .bubble.user.dark-mode {
+            color: #fff;
         }
 
         @keyframes fadeInUp {
@@ -137,6 +156,14 @@
             background: #fff;
         }
 
+        .table-scroll.dark-mode,
+        table.dark-mode,
+        th.dark-mode,
+        td.dark-mode {
+            color: #fff;
+            background: #23272f;
+        }
+
         table {
             border-collapse: collapse;
             width: 100%;
@@ -163,6 +190,11 @@
 
 <body>
     <div class="chat">
+        <button id="toggleTheme"
+            style="position: absolute; top: 24px; left: 24px; z-index: 10; background: #222; color: #fff; border: none; border-radius: 50%; width: 40px; height: 40px; font-size: 1.3em; cursor: pointer; transition: background 0.2s; display: flex; align-items: center; justify-content: center; padding: 0;">
+            <span id="themeIcon"
+                style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%; font-size: 1.3em;">🌙</span>
+        </button>
         <h2 style="text-align:center; font-size:2em; margin-bottom: 20px;">🛍️ Asistente de Tienda IA</h2>
         <input id="question" placeholder="¿Qué productos se han vendido más?" style="width: 100%; padding: 12px;" />
         <button onclick="sendQuestion()">Preguntar</button>
@@ -170,6 +202,12 @@
         <div id="loader" class="loader" style="display:none;">
             <span class="dot"></span><span class="dot"></span><span class="dot"></span>
         </div>
+        <form id="uploadForm" enctype="multipart/form-data"
+            style="margin-bottom: 18px; display: flex; align-items: center; gap: 10px;">
+            <input type="file" id="fileInput" name="file" accept="application/pdf" style="padding: 6px;" />
+            <button type="submit">Subir PDF</button>
+            <span id="uploadStatus" style="font-size:0.95em;"></span>
+        </form>
     </div>
 
     <script>
@@ -225,6 +263,76 @@
 
         document.getElementById("question").addEventListener("keydown", function (e) {
             if (e.key === "Enter") sendQuestion();
+        });
+
+        // Subida de archivos PDF
+        document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const fileInput = document.getElementById('fileInput');
+            const status = document.getElementById('uploadStatus');
+            if (!fileInput.files.length) {
+                status.textContent = 'Selecciona un archivo PDF.';
+                status.style.color = 'red';
+                return;
+            }
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+            status.textContent = 'Subiendo...';
+            status.style.color = '#777';
+            try {
+                const res = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                if (res.ok) {
+                    status.textContent = 'Archivo subido correctamente.';
+                    status.style.color = 'green';
+                } else {
+                    status.textContent = 'Error al subir el archivo.';
+                    status.style.color = 'red';
+                }
+            } catch {
+                status.textContent = 'Error de conexión.';
+                status.style.color = 'red';
+            }
+        });
+
+        // Modo claro/oscuro
+        const toggleBtn = document.getElementById('toggleTheme');
+        const themeIcon = document.getElementById('themeIcon');
+        let darkMode = false;
+        function setDarkModeStyles(enable) {
+            document.body.classList.toggle('dark-mode', enable);
+            document.querySelector('.chat').classList.toggle('dark-mode', enable);
+            document.querySelectorAll('.bubble').forEach(b => b.classList.toggle('dark-mode', enable));
+            document.querySelectorAll('.bubble.user').forEach(b => b.classList.toggle('dark-mode', enable));
+            document.querySelectorAll('.table-scroll').forEach(t => t.classList.toggle('dark-mode', enable));
+            document.querySelectorAll('table').forEach(t => t.classList.toggle('dark-mode', enable));
+            document.querySelectorAll('th').forEach(t => t.classList.toggle('dark-mode', enable));
+            document.querySelectorAll('td').forEach(t => t.classList.toggle('dark-mode', enable));
+        }
+        toggleBtn.addEventListener('click', function () {
+            darkMode = !darkMode;
+            setDarkModeStyles(darkMode);
+            if (darkMode) {
+                document.body.style.background = '#181a1b';
+                document.body.style.color = '#fff';
+                document.querySelector('.chat').style.background = '#23272f';
+                document.querySelector('.chat').style.boxShadow = '0 4px 24px rgba(0,0,0,0.25)';
+                toggleBtn.style.background = '#f4f4f4';
+                toggleBtn.style.color = '#222';
+                themeIcon.textContent = '☀️';
+                document.querySelectorAll('.bubble').forEach(b => b.style.background = b.classList.contains('user') ? '#2e7d5a' : '#2a3550');
+            } else {
+                document.body.style.background = '#f4f4f4';
+                document.body.style.color = '#222';
+                document.querySelector('.chat').style.background = '#fff';
+                document.querySelector('.chat').style.boxShadow = '0 4px 24px rgba(0,0,0,0.08)';
+                toggleBtn.style.background = '#222';
+                toggleBtn.style.color = '#fff';
+                themeIcon.textContent = '🌙';
+                document.querySelectorAll('.bubble').forEach(b => b.style.background = b.classList.contains('user') ? '#d1ffe6' : '#e6f0ff');
+            }
         });
     </script>
 </body>
